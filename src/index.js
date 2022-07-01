@@ -9,6 +9,15 @@ app.use(cors());
 
 const users = [];
 
+// MIDDLEWARES
+
+/**
+ * Verifica se existe uma conta com o mesmo username passado
+ * @param {*} request 
+ * @param {*} response 
+ * @param {*} next 
+ * @returns Caso seja true, retorna a função next. Caso seja false, retorna um código HTTP informando o erro
+ */
 function checksExistsUserAccount(request, response, next) {
   const { username } = request.headers;
 
@@ -23,6 +32,14 @@ function checksExistsUserAccount(request, response, next) {
   return next();
 }
 
+
+/**
+ * Verifica se o usuario pode criar um novo Todo
+ * @param {*} request 
+ * @param {*} response 
+ * @param {*} next 
+ * @returns Caso seja true, retorna a função next. Caso seja false, retorna um código HTTP informando o erro
+ */
 function checksCreateTodosUserAvailability(request, response, next) {
   const { user } = request;
 
@@ -33,12 +50,19 @@ function checksCreateTodosUserAvailability(request, response, next) {
   }
 }
 
+/**
+ * Verifica se existe um Todo com o Id passado
+ * @param {*} request 
+ * @param {*} response 
+ * @param {*} next 
+ * @returns Caso seja true, retorna a função next. Caso seja false, retorna um código HTTP informando o erro
+ */
 function checksTodoExists(request, response, next) {
   const { id } = request.params;
   const { username } = request.headers;
   const { user } = request;
 
-  const verifyUser = users.some((u) => u.username === username );
+  const verifyUser = users.find((u) => u.username === username );
 
   if(!verifyUser) {
     return response.status(404).json({ error: 'User not Found!'})
@@ -47,24 +71,32 @@ function checksTodoExists(request, response, next) {
   const validId = validate(id);
 
   if(!validId){
-    return response.status(404).json({ error: 'Invalid ID!'})
+    return response.status(400).json({ error: 'Invalid ID!'})
   }
 
-  const todo = user.todos.find((t) => t.id === id);
+  const todo = verifyUser.todos.find((t) => t.id === id);
 
   if(!todo) {
     return response.status(404).json({ error: 'Todo not Found!'})
   }
 
   request.todo = todo;
+  request.user = verifyUser;
 
   return next();
 }
 
+/**
+ * Verifica se existe uma conta com o ID passado
+ * @param {*} request 
+ * @param {*} response 
+ * @param {*} next 
+ * @returns Caso seja true, retorna a função next. Caso seja false, retorna um código HTTP informando o erro
+ */
 function findUserById(request, response, next) {
   const { id } = request.params;
 
-  const user = users.some((user) => user.id === id);
+  const user = users.find((user) => user.id === id);
 
   if(!user){
     return response.status(404).json({ error: 'User not Found!'});
@@ -74,6 +106,8 @@ function findUserById(request, response, next) {
 
   return next();
 }
+
+// ROTAS
 
 app.post('/users', (request, response) => {
   const { name, username } = request.body;
